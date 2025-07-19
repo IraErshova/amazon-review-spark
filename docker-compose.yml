@@ -1,0 +1,29 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
+  spark:
+    image: bitnami/spark:3.5.0
+    container_name: spark
+    depends_on:
+      - mongodb
+    volumes:
+      - ./app:/app
+      - ./data:/data
+    command: >
+      bash -c "
+      /opt/bitnami/spark/bin/spark-submit
+      --master local[*]
+      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0
+      /app/process_reviews.py
+      "
+
+volumes:
+  mongo_data:
