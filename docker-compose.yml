@@ -24,6 +24,51 @@ services:
       --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0
       /app/process_reviews.py
       "
+  cassandra:
+    image: cassandra:4.1
+    container_name: cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: "reviews_cluster"
+      CASSANDRA_DATACENTER: "reviews_datacenter"
+      CASSANDRA_KEYSPACE: "amazon_reviews"
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    restart: unless-stopped
+
+
+  redis:
+    image: redis:7.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  api:
+    build: .
+    container_name: my_api
+    environment:
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_PORT: 9042
+      CASSANDRA_KEYSPACE: "amazon_reviews"
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      - cassandra
+      - redis
+    restart: unless-stopped
+    volumes:
+      - ./app:/app
+    working_dir: /app
 
 volumes:
   mongo_data:
+  cassandra_data:
+  redis_data:
