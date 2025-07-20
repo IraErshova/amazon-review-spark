@@ -94,3 +94,47 @@ db.monthly_product_trends.find({ product_id: 'product_id' })
 ![img_7.png](screenshots/img_7.png)
 ![img_8.png](screenshots/img_8.png)
 ![img_1.png](screenshots/img_1.png)
+
+
+## Homework 7
+
+### Create Cassandra tables and load data
+
+You need just run docker-compose file. It creates Cassandra, Redis and API containers. Also,
+it creates cassandra tables and starts ETL process.
+
+```bash
+docker-compose up -d
+```
+
+### Screenshots
+
+- Data in Cassandra
+
+![img.png](screenshots/img_10.png)
+
+![img_1.png](screenshots/img_11.png)
+
+![img_2.png](screenshots/img_12.png)
+
+![img_3.png](screenshots/img_13.png)
+
+![img_4.png](screenshots/img_14.png)
+
+![img_5.png](screenshots/img_15.png)
+
+- API
+
+![img.png](screenshots/api/img.png)
+
+![img_1.png](screenshots/api/img_1.png)
+
+![img_2.png](screenshots/api/img_2.png)
+
+![img_3.png](screenshots/api/img_3.png)
+
+![img_4.png](screenshots/api/img_4.png)
+
+![img_5.png](screenshots/api/img_5.png)
+
+![img_6.png](screenshots/api/img_6.png)

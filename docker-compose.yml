@@ -9,11 +9,56 @@ services:
       - "27017:27017"
     restart: unless-stopped
 
+  cassandra:
+    image: cassandra:4.1
+    container_name: cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: "reviews_cluster"
+      CASSANDRA_DATACENTER: "reviews_datacenter"
+      CASSANDRA_KEYSPACE: "amazon_reviews"
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: [ "CMD-SHELL", "cqlsh -e 'SELECT now() FROM system.local'" ]
+      interval: 1s
+      timeout: 10s
+      retries: 10
+
+  init-cassandra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      CASSANDRA_KEYSPACE: amazon_reviews
+      CASSANDRA_HOST: cassandra
+    command: [ "python", "create_cassandra_tables.py" ]
+    volumes:
+      - ./app:/app
+      - ./cql_scripts:/app/cql_scripts
+
+  redis:
+    image: redis:7.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
   spark:
     image: bitnami/spark:3.5.0
     container_name: spark
     depends_on:
-      - mongodb
+      init-cassandra:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_started
     volumes:
       - ./app:/app
       - ./data:/data
@@ -21,9 +66,33 @@ services:
       bash -c "
       /opt/bitnami/spark/bin/spark-submit
       --master local[*]
-      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0
-      /app/process_reviews.py
+      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.4.1
+      /app/ETL.py
       "
+
+  api:
+    build: .
+    container_name: my_api
+    environment:
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_PORT: 9042
+      CASSANDRA_KEYSPACE: "amazon_reviews"
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    volumes:
+      - ./app:/app
+    working_dir: /app
 
 volumes:
   mongo_data:
+  cassandra_data:
+  redis_data:
